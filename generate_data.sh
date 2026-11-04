@@ -1,42 +1,69 @@
+
 #!/usr/bin/env bash
 
-set -e   # stop the script if any command fails
+set -e
 
-
+# Check for missing argument
 if [ -z "$1" ]; then
-    echo "Usage: $0 <number_of_files>"
+    echo "Usage: ./generate_data.sh NUM_FILES"
     exit 1
 fi
 
-
-NUM_FILES=$1
+# Number of files and rows
+NUM_FILES="$1"
 ROWS=20
+
+# Create data directory
 mkdir -p data
 
+# Generate sensor files
+for i in $(seq 1 "$NUM_FILES"); do
 
-for i in $(seq 1 "$NUM_FILES"); do 
-    filename="data/sensor_${i}.csv" 
-    touch "$filename"
-    echo "timestamp,sensor_id,temperature" > $filename
+    FILE="data/sensor_${i}.csv"
+
+    echo "Generating $FILE"
+
+    # Write CSV header
+    echo "timestamp,temperature,humidity" > "$FILE"
+
+    # Select 3 random rows for even-numbered files
     if (( i % 2 == 0 )); then
-        nums=( $(shuf -i 1-"$ROWS" -n 3) )
+        nums=$(shuf -i 1-"$ROWS" -n 3)
     fi
 
-    for j in $(seq 1 "$ROWS"); do 
-        timestamp=$(( $(date +%s) + j ))
+    # Generate 20 data rows
+    for j in $(seq 1 "$ROWS"); do
+
+        timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+        # Generate normal temperature
         temperature=$(( RANDOM % 10 + 70 ))
 
         if (( i % 2 == 0 )); then
-            if [[ " ${nums[*]} " == *" $j "* ]]; then
-                temperature=$((RANDOM % 10 + 900 ))
-                echo "sensor_${i},${temperature}" >> $filename
-                continue
+
+            # Check whether this row is one of the 3 random bad rows
+            if [[ " $nums " == *" $j "* ]]; then
+
+                # Randomly choose a type of bad temperature
+                case $(( RANDOM % 3 )) in
+                    0)
+                        temperature="not_a_number"
+                        ;;
+                    1)
+                        temperature=200
+                        ;;
+                    2)
+                        temperature=""
+                        ;;
+                esac
+
             fi
         fi
-        echo "${timestamp},sensor_${i},${temperature}" >> $filename
-    done 
 
-done 
+        echo "${timestamp},${temperature},60" >> "$FILE"
 
+    done
 
-echo "Generated $NUM_FILES files in data/"
+done
+
+echo "Successfully generated $NUM_FILES sensor files."
