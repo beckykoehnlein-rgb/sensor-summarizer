@@ -28,7 +28,7 @@ for i in $(seq 1 "$NUM_FILES"); do
 
     # Select 3 random rows for even-numbered files
     if (( i % 2 == 0 )); then
-        nums=$(shuf -i 1-"$ROWS" -n 3)
+        nums=$(shuf -i 1-"$ROWS" -n 3 | tr '\n' ' ')
     fi
 
     # Generate 20 data rows
